@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function Logo(){return <Link href="/" className="brand" aria-label="XYZ TOUR AND TREK home"><span className="logoMark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M8 48 26 25l8 10 7-9 15 22H8Z"/></svg></span><span>XYZ TOUR<br/><small>AND TREK</small></span></Link>}
