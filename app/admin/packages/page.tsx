@@ -1,0 +1,18 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+type PackageRow = { id:string; title:string; slug:string; price:number|null; duration_days:number|null; featured:boolean; is_active:boolean };
+
+export default function AdminPackages(){
+  const [rows,setRows]=useState<PackageRow[]>([]); const [loading,setLoading]=useState(true); const [saving,setSaving]=useState(false);
+  const [form,setForm]=useState({title:"",slug:"",price:"",duration_days:"",description:""});
+  async function load(){setLoading(true); const {data}=await supabase.from("xyz_packages").select("id,title,slug,price,duration_days,featured,is_active").order("created_at",{ascending:false}); setRows((data||[]) as PackageRow[]); setLoading(false)}
+  useEffect(()=>{load()},[]);
+  function set(k:string,v:string){setForm(x=>({...x,[k]:v}))}
+  async function add(e:React.FormEvent){e.preventDefault();setSaving(true);const slug=form.slug||form.title.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");const {error}=await supabase.from("xyz_packages").insert({title:form.title,slug,price:form.price?Number(form.price):null,duration_days:form.duration_days?Number(form.duration_days):null,description:form.description});setSaving(false);if(error)alert(error.message);else{setForm({title:"",slug:"",price:"",duration_days:"",description:""});load()}}
+  async function toggle(id:string,value:boolean){const {error}=await supabase.from("xyz_packages").update({is_active:value}).eq("id",id);if(error)alert(error.message);else load()}
+  async function remove(id:string){if(!confirm("Delete this package?"))return;const {error}=await supabase.from("xyz_packages").delete().eq("id",id);if(error)alert(error.message);else load()}
+  return <main className="admin"><div className="admin-nav"><strong>XYZ Treks & Tours — Packages</strong><a className="btn light" href="/admin">Dashboard</a></div><div className="admin-wrap"><h1>Package Manager</h1><form className="form" onSubmit={add}><h2>Add package</h2><div className="row"><div className="field"><label>Title *</label><input required value={form.title} onChange={e=>set("title",e.target.value)}/></div><div className="field"><label>Slug</label><input value={form.slug} onChange={e=>set("slug",e.target.value)}/></div></div><div className="row"><div className="field"><label>Price (USD)</label><input type="number" value={form.price} onChange={e=>set("price",e.target.value)}/></div><div className="field"><label>Duration (days)</label><input type="number" value={form.duration_days} onChange={e=>set("duration_days",e.target.value)}/></div></div><div className="field"><label>Description</label><textarea value={form.description} onChange={e=>set("description",e.target.value)}/></div><button className="btn primary" disabled={saving}>{saving?"Saving...":"Add Package"}</button></form><div className="table"><table><thead><tr><th>Package</th><th>Price</th><th>Days</th><th>Status</th><th>Action</th></tr></thead><tbody>{loading?<tr><td colSpan={5}>Loading…</td></tr>:rows.map(x=><tr key={x.id}><td>{x.title}</td><td>{x.price?`$${x.price}`:"—"}</td><td>{x.duration_days||"—"}</td><td>{x.is_active?"Active":"Hidden"}</td><td><button className="btn light" onClick={()=>toggle(x.id,!x.is_active)}>{x.is_active?"Hide":"Publish"}</button> <button className="btn" onClick={()=>remove(x.id)}>Delete</button></td></tr>)}</tbody></table></div></div></main>
+}
